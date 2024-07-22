@@ -6,6 +6,8 @@ import androidx.lifecycle.viewModelScope
 import com.example.exchangeapp.data.network.response.ConvertCurrency
 import com.example.exchangeapp.data.network.response.ResultResponse
 import com.example.exchangeapp.domain.usecases.ConvertCurrencyUseCase
+import com.example.exchangeapp.domain.usecases.MultiConvertCurrenciesUseCase
+import com.example.exchangeapp.presentation.model.CurrencyPresentState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -15,26 +17,12 @@ import javax.inject.Inject
 
 @HiltViewModel
 class MainScreenViewModel @Inject constructor(
-    private val convertCurrencyUseCase: ConvertCurrencyUseCase
+    private val convertCurrencyUseCase: ConvertCurrencyUseCase,
+    private val multiConvertCurrenciesUseCase: MultiConvertCurrenciesUseCase
 ): ViewModel() {
-    private val _convertedSumm = MutableStateFlow(
-        ConvertCurrency(
-            base = "USD",
-            amount =1,
-            result = ResultResponse(
-                rate = 0.0,
-                dynamicRates = mapOf<String, Double>(Pair("EUR", 0.0))
-            ),
-            ms = 2
-            ), )
-    val convertedSumm : StateFlow<ConvertCurrency> = _convertedSumm
+    private val _convertedSumm = MutableStateFlow(CurrencyPresentState() )
+    val convertedSumm : StateFlow<CurrencyPresentState> = _convertedSumm
 
-    private val _error = MutableStateFlow<String?>("")
-    val errorMessage = _error
-
-    init {
-
-    }
 
 
     fun convertCurrency(from : String, to : String, amount : Int){
@@ -44,13 +32,37 @@ class MainScreenViewModel @Inject constructor(
                 to = to,
                 amount = amount
             ).catch { e ->
-                _error.value = e.message
+                _convertedSumm.value.loadError = e.message.toString()
 
                 Log.d("LOL", "Error:${e.message}")
             }
-            .collect { userDetails ->
-                _convertedSumm.value = userDetails
+            .collect { data ->
+                _convertedSumm.value = _convertedSumm.value.copy(
+                    currencies = "Amount $amount $from: $to = ${amount * data.result.rate}"
+                )
             }
+        }
+    }
+
+    fun multiConvertCurrency(from: String, to: String, amount: Int){
+        viewModelScope.launch {
+            multiConvertCurrenciesUseCase.invoke(from, to)
+                .catch { e ->
+                    _convertedSumm.value = _convertedSumm.value.copy(
+                        loadError = e.message.toString()
+                    )
+                    Log.d("LOL", "Error: ${e.message}")
+                }
+                .collect { data ->
+                    var res = ""
+                    data.result?.forEach { (str, double) ->
+                        res += "$str $double, "
+                    }
+                    Log.d("LOL", res)
+                    _convertedSumm.value = _convertedSumm.value.copy(
+                        currencies = "Amount $amount $from: $res"
+                    )
+                }
         }
     }
 }

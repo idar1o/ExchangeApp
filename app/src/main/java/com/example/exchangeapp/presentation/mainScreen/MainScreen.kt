@@ -42,11 +42,12 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.core.text.isDigitsOnly
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.exchangeapp.presentation.components.RetrySection
 
 @Composable
 fun MainScreen(viewModel: MainScreenViewModel = hiltViewModel()) {
     val result by viewModel.convertedSumm.collectAsState()
-    val error by viewModel.errorMessage.collectAsState()
+
 
     var amount by remember { mutableStateOf("0") }
     var fromCurrency by remember { mutableStateOf("USD") }
@@ -62,7 +63,13 @@ fun MainScreen(viewModel: MainScreenViewModel = hiltViewModel()) {
         AmountInputField(amount) {
             amount = it
         }
+        Spacer(modifier = Modifier.height(16.dp))
 
+        if (amount.isDigitsOnly()) {
+            val res = result.currencies
+
+            Text(text = "$res")
+        }
         Spacer(modifier = Modifier.height(16.dp))
 
         CurrencyDropdown(
@@ -119,25 +126,26 @@ fun MainScreen(viewModel: MainScreenViewModel = hiltViewModel()) {
 
 
 
-        if (amount.isDigitsOnly()) {
 
-            val res = try {
-                result.result.rate * amount.toInt()
-            }catch (e:NumberFormatException){
-                Log.d("LOL", e.message.toString())
-                0.0
-            }
-            Text(text = "${res}")
-        }
         Button(
             onClick = {
-
                 if (toCurrencies.size == 1 && amount.isDigitsOnly()){
                     viewModel.convertCurrency(
                         from = fromCurrency,
                         to = toCurrencies.get(0),
                         amount = amount.toInt()
                     )
+                }else if (toCurrencies.size > 1 && amount.isDigitsOnly()){
+                    val to = toCurrencies.joinToString(",")
+                    viewModel.multiConvertCurrency(
+                        from = fromCurrency,
+                        to = to,
+                        amount = amount.toInt()
+                    )
+                }else{
+//                    RetrySection(error = "Введите корректные данные") {
+//                        Log.d("LOL", "retrysection")
+//                    }
                 }
             },
             modifier = Modifier.fillMaxWidth()

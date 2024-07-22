@@ -1,6 +1,7 @@
 package com.example.exchangeapp.data.network
 
 import com.example.exchangeapp.data.network.response.ConvertCurrency
+import com.example.exchangeapp.data.network.response.MultiCurrencyResponse
 import com.example.exchangeapp.utils.Constants.API_KEY
 import com.example.exchangeapp.utils.Resource
 import retrofit2.Call
@@ -17,4 +18,11 @@ interface ApiService {
         @Query("to") to: String,
         @Query("amount") amount: Int,
     ): Call<ConvertCurrency>
+
+    @GET("/fetch-multi")
+    suspend fun fetchMultiConversion(
+        @Query("api_key") apiKey: String = API_KEY,
+        @Query("from") from: String,
+        @Query("to") to: String
+    ): MultiCurrencyResponse
 }

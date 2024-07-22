@@ -3,6 +3,7 @@ package com.example.exchangeapp.data
 
 import com.example.exchangeapp.data.network.ApiService
 import com.example.exchangeapp.data.network.response.ConvertCurrency
+import com.example.exchangeapp.data.network.response.MultiCurrencyResponse
 import com.example.exchangeapp.domain.ApiRepository
 import com.example.exchangeapp.utils.Constants.API_KEY
 import kotlinx.coroutines.Dispatchers
@@ -31,6 +32,16 @@ class ApiRepositoryImpl @Inject constructor(
             } else {
                 throw Exception(response.errorBody()?.string())
             }
+        }.flowOn(Dispatchers.IO)
+    }
+
+    override suspend fun multiConvertCurrency(
+        from: String,
+        to: String
+    ): Flow<MultiCurrencyResponse> {
+        return flow {
+            val response = api.fetchMultiConversion(from = from, to = to)
+            emit(response)
         }.flowOn(Dispatchers.IO)
     }
 }
